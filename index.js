@@ -47,10 +47,10 @@ client.on("ready", () => {
       const currentItems = items;
       // Import old items from items.json. If it doesn't exist, oldItems will be an empty array
       const oldItems =
-        fs.existsSync("./items.json") && fs.readFileSync("./items.json", "utf8")
-          ? JSON.parse(fs.readFileSync("./items.json", "utf8"))
+        fs.existsSync("./items.json") &&
+        (result = fs.readFileSync("./items.json", "utf8"))
+          ? JSON.parse(result)
           : [];
-
       // Find the difference between the old and new items using filter/map on title, price and url parameters
       const newItems = currentItems.filter(
         (currentItem) =>
@@ -70,6 +70,9 @@ client.on("ready", () => {
         channel.send(
           "Nye chips i kisten!" + "\n" + chipsJSONToString(newItems)
         );
+      } else {
+        client.destroy();
+        process.exit();
       }
     });
   }
@@ -77,7 +80,7 @@ client.on("ready", () => {
 
 // Filthy hack to shut down the bot
 client.on("messageCreate", (message) => {
-  if (message.author.id === process.env.DISCORD_BOT_ID) {
+  if (message.author.id === client.application.id) {
     client.destroy();
     process.exit();
   }
