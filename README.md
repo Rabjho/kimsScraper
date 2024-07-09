@@ -1,2 +1,2 @@
-# kimsScraper
-Kims Snackspild webscraper
+TODO Make Git repo
+TODO Output content nicely
