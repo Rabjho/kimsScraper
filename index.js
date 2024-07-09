@@ -68,7 +68,7 @@ client.on("ready", () => {
 
         // Send message to channel with new items
         channel.send(
-          "Nye chips i kisten!" + "\n" + chipsJSONToString(newItems)
+          "@everyone Nye chips i kisten!" + "\n" + chipsJSONToString(newItems)
         );
       } else {
         client.destroy();
