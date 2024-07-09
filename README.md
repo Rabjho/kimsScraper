@@ -1,0 +1,2 @@
+# kimsScraper
+Kims Snackspild webscraper
