@@ -40,7 +40,7 @@ const sendWebhook = async (webHookUrl, content) => {
         content: content,
       }),
     });
-    console.log(response);
+
     return response;
   } catch (error) {
     console.error("woops");
