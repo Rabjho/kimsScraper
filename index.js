@@ -1,11 +1,6 @@
 // Import fetch, client from discord.js and cheerio
-const { WebhookClient } = require("discord.js");
 const cheerio = require("cheerio");
 const fs = require("fs");
-
-const webHookClient = new WebhookClient({
-  url: process.env.WEBHOOK_URL,
-});
 
 const getItems = async () => {
   try {
@@ -34,6 +29,26 @@ const getItems = async () => {
   }
 };
 
+const sendWebhook = async (webHookUrl, content) => {
+  try {
+    const response = await fetch(webHookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        content: content,
+      }),
+    });
+    console.log(response);
+    return response;
+  } catch (error) {
+    console.error("woops");
+    console.error(error);
+    throw new Error("FAILED_TO_USE_WEBHOOK");
+  }
+};
+
 // Check for new items
 const currentItems = getItems();
 
@@ -56,15 +71,14 @@ currentItems.then((currentItems) => {
   );
 
   if (newItems.length !== 0) {
-    // Update items.json with new items
-    fs.writeFileSync("./items.json", JSON.stringify(currentItems, null, 2)); // TODO Replace with database for serverless?
-
     // Send message to channel with new items
-    webHookClient.send({
-      content:
-        "@everyone Nye chips i kisten!" + "\n" + chipsJSONToString(newItems),
-    });
+    const webhookResponse = sendWebhook(
+      process.env.WEBHOOK_URL,
+      "@everyone Nye chips i kisten!" + "\n" + chipsJSONToString(newItems)
+    );
   }
+
+  fs.writeFileSync("./items.json", JSON.stringify(currentItems, null, 2)); // TODO Replace with database for serverless?
 });
 
 // Format the items into [title](url) - price
