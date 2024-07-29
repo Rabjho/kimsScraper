@@ -1,2 +1,0 @@
-* * * * * root node index.js >> /var/log/cron.log 2>&1
-# Remember LF not CRLF, cron not happy

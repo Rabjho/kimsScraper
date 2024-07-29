@@ -8,7 +8,7 @@ RUN npm install
 
 COPY . .
 
-# Runs index.js every 6 hours
+# Runs index.js every 6 hours 
 RUN echo '0 */6 * * * node /index.js >> /var/log/cron.log 2>&1' > /etc/crontabs/root
 
-CMD crond -f -L /var/log/cron.log
+CMD ["crond", "-L", "/var/log/cron.log", "-f"]
