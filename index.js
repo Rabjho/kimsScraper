@@ -77,7 +77,7 @@ currentItems.then((currentItems) => {
       "@everyone Nye chips i kisten!" + "\n" + chipsJSONToString(newItems)
     );
   }
-
+  
   fs.writeFileSync("./items.json", JSON.stringify(currentItems, null, 2)); // TODO Replace with database for serverless?
 });
 
