@@ -1,4 +1,11 @@
 services:
+  scraper:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: result/latest
+    env_file:
+      - .env
   database:
     container_name: postgres_container
     image: 'postgres:17beta2-alpine'
