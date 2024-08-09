@@ -31,21 +31,48 @@ const getItems = async () => {
   }
 };
 
+const extractProductInfo = ($, element) => ({
+  title: $(element).find("p.woocommerce-loop-product__title").text(),
+  price: $(element).find("span.price").first().text(),
+  url: $(element).find("a").attr("href"),
+});
+
+// It is what it is
+const extractNutritionalInfo = ($$$) => ({
+  calories: $$$("th:contains('Energi')").next().text().split('/').pop().trim(),
+  fat: $$$("th:contains('Fedt')").next().text().replace('g', ''),
+  saturated_fat: $$$("th:contains('heraf mættede fedtsyrer')").next().text().replace('g', '').trim(),
+  carbohydrates: $$$("th:contains('Kulhydrat')").next().text().replace('g', ''),
+  sugar: $$$("th:contains('heraf sukkerarter')").next().text().replace('g', '').trim(),
+  dietary_fiber: $$$("th:contains('Kostfibre')").next().text().replace('g', ''),
+  protein: $$$("th:contains('Protein')").next().text().replace('g', ''),
+  salt: $$$("th:contains('Salt')").next().text().replace('g', ''),
+  ingredients: $$$("div.indgredienser").text().replace('Ingredienser: ', '')
+});
+
 const scrapePage = async (url) => {
   console.log(`Fetching page: ${url}`);
   const pageResponse = await fetch(url);
   const pageData = await pageResponse.text();
   const $$ = cheerio.load(pageData);
-
   const items = [];
+  const productLinks = [];
+
   $$("li.product").each((i, element) => {
-    const item = {
-      title: $$(element).find("p.woocommerce-loop-product__title").text(),
-      price: $$(element).find("span.price").first().text(),
-      url: $$(element).find("a").attr("href"),
-    };
+    const item = extractProductInfo($$, element);
     items.push(item);
+    productLinks.push(item.url)
   });
+
+  for (const link of productLinks) {
+    console.log(`Fetching product page: ${link}`);
+    const productResponse = await fetch(link);
+    const productData = await productResponse.text();
+    const $$$ = cheerio.load(productData);
+    const additionalInfo = extractNutritionalInfo($$$)
+    const itemIndex = items.findIndex(item => item.url === link);
+    items[itemIndex] = { ...items[itemIndex], ...additionalInfo };
+  }
 
   console.log('Items found on page:', items);
   return items;
