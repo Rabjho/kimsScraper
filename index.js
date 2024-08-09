@@ -4,22 +4,24 @@ const fs = require("fs");
 
 const getItems = async () => {
   try {
-    const response = await fetch(
-      "https://kims.dk/kategori/undgaasnackspild/?orderby=price&stoerrelse-poser=almindelig&type-form=riflede"
-    );
+    const baseUrl = "https://kims.dk/kategori/undgaasnackspild/"
+    const pages = [baseUrl];
+    const response = await fetch(baseUrl);
     const data = await response.text();
     const $ = cheerio.load(data);
-    const currentItems = [];
-
-    $("li.product").each((i, element) => {
-      const item = {
-        title: $(element).find("p.woocommerce-loop-product__title").text(),
-        price: $(element).find("span.price").text(),
-        url: $(element).find("a").attr("href"),
-      };
-
-      currentItems.push(item);
+    
+    $("#pagination_side option").each((i, element) => {
+      const pageUrl = $(element).attr("value");
+      if (pageUrl && !pages.includes(pageUrl)) {
+        pages.push(pageUrl);
+      }
     });
+
+    const currentItems = [];
+    for (const page of pages) {
+      const items = await scrapePage(page);
+      currentItems.push(...items);
+    }
 
     return currentItems;
   } catch (error) {
@@ -28,6 +30,26 @@ const getItems = async () => {
     throw new Error("FAILED_TO_FETCH_ITEMS");
   }
 };
+
+const scrapePage = async (url) => {
+  console.log(`Fetching page: ${url}`);
+  const pageResponse = await fetch(url);
+  const pageData = await pageResponse.text();
+  const $$ = cheerio.load(pageData);
+
+  const items = [];
+  $$("li.product").each((i, element) => {
+    const item = {
+      title: $$(element).find("p.woocommerce-loop-product__title").text(),
+      price: $$(element).find("span.price").first().text(),
+      url: $$(element).find("a").attr("href"),
+    };
+    items.push(item);
+  });
+
+  console.log('Items found on page:', items);
+  return items;
+}
 
 const sendWebhook = async (webHookUrl, content) => {
   try {
@@ -69,7 +91,7 @@ currentItems.then((currentItems) => {
           oldItem.url === currentItem.url
       )
   );
-
+  
   if (newItems.length !== 0) {
     // Send message to channel with new items
     const webhookResponse = sendWebhook(
