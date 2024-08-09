@@ -31,11 +31,35 @@ const getItems = async () => {
   }
 };
 
-const extractProductInfo = ($, element) => ({
-  title: $(element).find("p.woocommerce-loop-product__title").text(),
-  price: $(element).find("span.price").first().text(),
-  url: $(element).find("a").attr("href"),
-});
+const extractProductInfo = ($, element) => {
+  // Extract name, price, url
+  const name = $(element).find("p.woocommerce-loop-product__title").text();
+  const price = $(element).find("span.price").first().text().replace(',', '.').replace('kr.', '').trim();
+  const url = $(element).find("a").attr("href");
+
+  // Extract weight
+  const weightMatch = name.match(/(\d+x\d+g|\d+g)/);
+  let weight = '-';
+  if (weightMatch) {
+    weight = weightMatch[0].replace('g', '');
+    if (weight.includes('x')) {
+      const [quantity, unitWeight] = weight.split('x').map(str => parseInt(str, 10));
+      weight = `${quantity * unitWeight}`;
+    }
+  }
+
+  // Extract date
+  const dateMatch = name.match(/\d{2}\.\d{2}\.\d{4}$/);
+  const date = dateMatch ? dateMatch[0] : '-';
+
+  return {
+    name,
+    price,
+    url,
+    weight,
+    date,    
+  };
+};
 
 // It is what it is
 const extractNutritionalInfo = ($$$) => ({
@@ -113,7 +137,7 @@ currentItems.then((currentItems) => {
     (currentItem) =>
       !oldItems.some(
         (oldItem) =>
-          oldItem.title === currentItem.title &&
+          oldItem.name === currentItem.name &&
           oldItem.price === currentItem.price &&
           oldItem.url === currentItem.url
       )
@@ -130,9 +154,9 @@ currentItems.then((currentItems) => {
   fs.writeFileSync("./items.json", JSON.stringify(currentItems, null, 2)); // TODO Replace with database for serverless?
 });
 
-// Format the items into [title](url) - price
+// Format the items into [name](url) - price
 function chipsJSONToString(chips) {
   return chips
-    .map((chip) => `[${chip.title}](${chip.url}) - ${chip.price}`)
+    .map((chip) => `[${chip.name}](${chip.url}) - ${chip.price}`)
     .join("\n");
 }

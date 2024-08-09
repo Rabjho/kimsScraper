@@ -1,9 +1,9 @@
 CREATE TABLE items (
     item_id SERIAL UNIQUE PRIMARY KEY,
-    item_name VARCHAR(255) NOT NULL,
-    price_dkk DECIMAL(10, 2) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
     quantity INT,
-    weight_grams INT NOT NULL,
+    weight INT NOT NULL,
     expiration_date DATE,
     available BOOLEAN NOT NULL
 );
