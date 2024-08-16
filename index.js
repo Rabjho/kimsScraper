@@ -1,6 +1,28 @@
 // Import fetch, client from discord.js and cheerio
 const cheerio = require("cheerio");
 const fs = require("fs");
+const { Client } = require('pg');
+
+const client = new Client({
+  host: process.env.POSTGRES_HOST,
+  user: process.env.POSTGRES_USER,
+  database: process.env.POSTGRES_DB,
+  password: process.env.POSTGRES_PASSWORD,
+  port: 5432
+});
+
+client.connect()
+  .then(() => console.log('Connected to database'))
+  .catch((err => console.error('Failed to connect to database', err.stack)));
+
+client.query('SELECT NOW()', (err, res) => {
+  if(err) {
+    console.error('Error executing query', err.stack);
+  } else {
+    console.log('Query result:', res.rows[0]);
+  }
+  client.end();
+});
 
 const getItems = async () => {
   try {
@@ -32,12 +54,12 @@ const getItems = async () => {
 };
 
 const extractProductInfo = ($, element) => {
-  // Extract name, price, url
+  // Scrape name, price, url
   const name = $(element).find("p.woocommerce-loop-product__title").text();
   const price = $(element).find("span.price").first().text().replace(',', '.').replace('kr.', '').trim();
   const url = $(element).find("a").attr("href");
 
-  // Extract weight
+  // Weight from name
   const weightMatch = name.match(/(\d+x\d+g|\d+g)/);
   let weight = '-';
   if (weightMatch) {
@@ -48,7 +70,7 @@ const extractProductInfo = ($, element) => {
     }
   }
 
-  // Extract date
+  // Date from name
   const dateMatch = name.match(/\d{2}\.\d{2}\.\d{4}$/);
   const date = dateMatch ? dateMatch[0] : '-';
 
@@ -146,8 +168,8 @@ currentItems.then((currentItems) => {
   if (newItems.length !== 0) {
     // Send message to channel with new items
     const webhookResponse = sendWebhook(
-      process.env.WEBHOOK_URL,
-      "@everyone Nye chips i kisten!" + "\n" + chipsJSONToString(newItems)
+       process.env.WEBHOOK_URL,
+       "everyone Nye chips i kisten!" + "\n" + itemJSONToString(newItems)
     );
   }
   
@@ -155,8 +177,8 @@ currentItems.then((currentItems) => {
 });
 
 // Format the items into [name](url) - price
-function chipsJSONToString(chips) {
-  return chips
-    .map((chip) => `[${chip.name}](${chip.url}) - ${chip.price}`)
+function itemJSONToString(items) {
+  return items
+    .map((item) => `[${item.name}](${item.url}) - ${item.price}`)
     .join("\n");
 }
