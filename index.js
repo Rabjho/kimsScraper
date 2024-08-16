@@ -142,7 +142,7 @@ const scrapePage = async (url) => {
 };
 
 const sendWebhook = async (webHookUrl, content) => {
-  if (content.length > 2000) { 
+  if (content.length > 2000) {
     throw new Error("CONTENT_TOO_LONG");
   }
 
@@ -187,22 +187,53 @@ currentItems.then((currentItems) => {
   );
 
   if (newItems.length !== 0) {
-    // Send message to channel with new items
-    const webhookResponse = sendWebhook(
-      process.env.WEBHOOK_URL,
-      "everyone Nye chips i kisten!\n"+itemJSONToString([newItems[0],newItems[1]])  //This cannot total more than 2k characters
-    );
-    webhookResponse.then((response) => {
-      console.log("Webhook sent:", response);
-    });
+    // Compose a list of messages to be send
+    messageList = ["everyone Nye chips i kisten!\n"];
+    message = [];
+    msgStrLen = 0;
+    for (let i = 0; i < newItems.length; i++) {
+      // Format item for discord message
+      itemString = `[${newItems[i].name}](<${newItems[i].url}>) - ${newItems[i].price}`;
+
+      // Message cannot total more than 2k characters
+      if (msgStrLen + itemString.length + 1 <= 2000) {
+        message.push(itemString);
+        msgStrLen += itemString.length + 1;
+      } else {
+        messageList.push(message.join("\n"));
+        message = [itemString];
+        msgStrLen = itemString.length + 1;
+      }
+    }
+
+    // Add message containing remaining items
+    if (message.length > 0) {
+      messageList.push(message.join("\n"));
+    }
+
+    // Function to delay execution of requests
+    const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    // Function to send message to webhook
+    const sendMessage = async (message) => {
+      const webhookResponse = await sendWebhook(
+        process.env.WEBHOOK_URL,
+        message
+      );
+
+      console.log("Webhook sent:", webhookResponse);
+    };
+
+    // Function to send all messages
+    const sendMessages = async (messageList) => {
+      for (const message of messageList) {
+        await sendMessage(message);
+        await delay(500);
+      }
+    };
+
+    sendMessages(messageList);
   }
 
   fs.writeFileSync("./items.json", JSON.stringify(currentItems, null, 2)); // TODO Replace with database for serverless?
 });
-
-// Format the items into [name](url) - price
-function itemJSONToString(items) {
-  return items
-    .map((item) => `[${item.name}](${item.url}) - ${item.price}`)
-    .join("\n");
-}
